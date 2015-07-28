@@ -1,0 +1,51 @@
+{
+  "name": "react-absolute-grid",
+  "version": "1.0.4",
+  "description": "An absolutely positioned responsive touch-enabled fully configurable React grid with drag/drop, filtering, and sorting",
+  "main": "demos/index.html",
+  "scripts": {
+    "build-demo": "webpack --config 'webpack/demo.config.js' --optimize-minimize --content-base demo",
+    "dev": "webpack-dev-server --config 'webpack/dev.config.js' --devtool eval --progress --colors --hot --content-base demo",
+    "lint": "eslint src"
+  },
+  "author": {
+    "name": "Jonathan Rowny"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^3.9.3",
+    "react": "^0.13.3"
+  },
+  "devDependencies": {
+    "babel-eslint": "^3.1.9",
+    "eslint": "^0.21.2",
+    "eslint-plugin-react": "^2.4.0",
+    "babel-core": "^5.4.7",
+    "babel-loader": "^5.1.3",
+    "node-libs-browser": "^0.5.2",
+    "webpack": "^1.9.10",
+    "webpack-dev-server": "^1.9.0"
+  },
+  "gitHead": "de6b5c64a40306ce800e7b0454ccd8494da3ce6d",
+  "_id": "react-absolute-grid@1.0.4",
+  "_shasum": "8890b25f772e6e23e86bd74fa66247916494b499",
+  "_from": "react-absolute-grid@",
+  "_npmVersion": "2.7.4",
+  "_nodeVersion": "0.12.2",
+  "_npmUser": {
+    "name": "jrowny",
+    "email": "jrowny@gmail.com"
+  },
+  "dist": {
+    "shasum": "8890b25f772e6e23e86bd74fa66247916494b499",
+    "tarball": "http://localhost:4873/react-absolute-grid/-/react-absolute-grid-1.0.4.tgz"
+  },
+  "maintainers": [
+    {
+      "name": "jrowny",
+      "email": "jrowny@gmail.com"
+    }
+  ],
+  "directories": {},
+  "_resolved": "http://localhost:4873/react-absolute-grid/-/react-absolute-grid-1.0.4.tgz"
+}
