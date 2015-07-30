@@ -35,8 +35,7 @@ db.loadDatabase(function(err) {
                             profile = {};
                         profile.mat_id = cellValue.text;
                         profile.url = cellValue.hyperlink;
-                        profile.profile_completed = false;
-                        profile.rejected = false;
+                        profile.profile_completed = profile.profile_rejected = profile.profile_published = false;
 
                         if (profile.mat_id) {
                             db.insert(profile, function(err, newRecords) {
