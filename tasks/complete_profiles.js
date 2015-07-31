@@ -4,7 +4,7 @@ var incompleteProfiles = [];
     url: 'http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=' + 'T2898073'
 });*/
 
-
+var cloudinary = require('cloudinary');
 var Datastore = require('nedb'),
     fs = require('fs'),
     db_profiles = new Datastore({
@@ -15,6 +15,16 @@ var Datastore = require('nedb'),
         filename: 'db/completed_profiles',
         autoload: true
     });
+
+var selectXPath = 'xPath = function(expression) {\
+  return {\
+    type: "xpath",\
+    path: expression,\
+    toString: function() {\
+      return this.type + " selector: " + this.path;\
+    }\
+  };\
+};';
 
 db_profiles.find({
     profile_completed: false,
@@ -31,6 +41,14 @@ db_profiles.find({
         processIncompleteProfiles();
     } else console.log('Nothing to process');
 });
+
+cloudinary.config({
+    cloud_name: 'dysqj6szg',
+    api_key: '467712173355381',
+    api_secret: 'ArU58r4jqVpuHadg-SegWSRKr8o'
+});
+
+//var CLOUDINARY_URL=cloudinary://467712173355381:ArU58r4jqVpuHadg-SegWSRKr8o@dysqj6szg
 
 function processIncompleteProfiles() {
 
@@ -132,7 +150,24 @@ function processIncompleteProfiles() {
     spooky.on('write_file', function(params) {
         var mat_id = params.mat_id,
             pageContent = params.page_content;
+
+        if (!fs.existsSync(DIR_PAGECONTENTS)) {
+            fs.mkdirSync(DIR_PAGECONTENTS);
+        }
         fs.writeFile(DIR_PAGECONTENTS + '/' + mat_id + '.html', pageContent, function() {});
+    });
+
+    spooky.on('cloudify_images', function(profile) {
+        var full_size_images = profile.images.full_size;
+
+        full_size_images.each(function(photo) {
+            cloudinary.uploader.upload(photo,
+                function(result) {
+                    console.log(result)
+                }, {
+                    folder: profile.mat_id
+                });
+        });
     });
 
     // ---------- Main Event
@@ -145,8 +180,11 @@ function processIncompleteProfiles() {
             step: step,
             queryParams: queryParams,
             incompleteProfiles: incompleteProfiles,
-            profileSelectors: profileSelectors
+            profileSelectors: profileSelectors,
+            x: selectXPath
         }, function() {
+            eval(x);
+
             var baseProfileURL = 'http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=',
                 phoneNumberURL = 'http://profile.tamilmatrimony.com/assuredcontact/assuredinsertphonerequest.php',
                 photoURL = 'http://profile.tamilmatrimony.com/photo/enlargephoto.php';
@@ -198,9 +236,9 @@ function processIncompleteProfiles() {
 
                 this.repeat(keys.length, function() {
                     this.then(function() {
-                        /*var value = '',
+                        var value = '',
                             key = keys[i],
-                            selector = profileSelectors[key];
+                            selector = xPath(profileSelectors[key]);
 
                         switch (key) {
                             case 'is_phone_number':
@@ -217,11 +255,10 @@ function processIncompleteProfiles() {
                                 value = this.fetchText(selector).trim();
                                 break;
                         }
-                        console.log(key,value);
+                        console.log(key, value);
                         profile[key] = value;
-                        i++;*/
-                        console.log(this.fetchText('#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(7) > div.fleft.colon.paddl15.width175 > span'))
                     });
+                    i++;
                 });
 
                 this.then(function() {
@@ -276,6 +313,8 @@ function processIncompleteProfiles() {
                                 profile.photos = {};
                                 profile.photos.thumbnails = this.getElementsAttribute('#gallery > div:nth-child(1) > div.ad-nav.fleft > div.ad-thumbs > ul a img', 'src');
                                 profile.photos.full_size = this.getElementsAttribute('#gallery > div:nth-child(1) > div.ad-nav.fleft > div.ad-thumbs > ul a', 'href');
+
+                                this.emit('cloudify_images', profile);
                             });
                         }
                     }
@@ -340,63 +379,107 @@ function processIncompleteProfiles() {
     });
 
     var profileSelectors = {
-        mat_id: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.printvpbg.vpbgprint > div.hdtxt11.fleft.paddt10 > ul > li:nth-child(1)',
-        created_by: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.printvpbg.vpbgprint > div.hdtxt11.fleft.paddt10 > ul > li:nth-child(3)',
+        mat_id: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[1]/div[2]/ul/li[1]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.printvpbg.vpbgprint > div.hdtxt11.fleft.paddt10 > ul > li:nth-child(1)',
+        created_by: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[1]/div[2]/ul/li[3]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.printvpbg.vpbgprint > div.hdtxt11.fleft.paddt10 > ul > li:nth-child(3)',
 
-        last_login: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fright > div.padd5.fright.vp-chatoffline > div > div.fleft > ul > li:nth-child(1) > div', //last_login).text().split(':')[1].trim()
+        last_login: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[3]/div[2]/div[3]/div/div[1]/ul/li[1]/div',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fright > div.padd5.fright.vp-chatoffline > div > div.fleft > ul > li:nth-child(1) > div', //last_login).text().split(':')[1].trim()
 
-        description: '#profilecompletedesc',
+        description: '//*[@id="profilecompletedesc"]',
+        //'#profilecompletedesc',
 
         // Profile
-        name: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(1) > div.fleft.colon.paddl15.width175',
+        name: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[1]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(1) > div.fleft.colon.paddl15.width175',
 
-        age: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fleft.paddb10 > ul > li:nth-child(1) > span:nth-child(2)',
-        height_feet: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fleft.paddb10 > ul > li:nth-child(1) > span:nth-child(4)',
-        height_inch: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fleft.paddb10 > ul > li:nth-child(1) > span:nth-child(5)',
-        weight: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(10) > div.fleft.colon.paddl15.width175',
+        age: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[3]/div[1]/ul/li[1]/span[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fleft.paddb10 > ul > li:nth-child(1) > span:nth-child(2)',
+        height_feet: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[3]/div[1]/ul/li[1]/span[4]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fleft.paddb10 > ul > li:nth-child(1) > span:nth-child(4)',
+        height_inch: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[3]/div[1]/ul/li[1]/span[5]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.fleft.mediumtxt1 > div.fleft.paddb10 > ul > li:nth-child(1) > span:nth-child(5)',
+        weight: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[10]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(10) > div.fleft.colon.paddl15.width175',
 
-        mother_tongue: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(13) > div.fleft.colon.paddl15.width175 > span',
-        maritial_status: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(16) > div.fleft.colon.paddl15.width175',
+        mother_tongue: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[13]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(13) > div.fleft.colon.paddl15.width175 > span',
+        maritial_status: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[16]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(16) > div.fleft.colon.paddl15.width175',
 
         // Body
-        body_type: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(2) > div.fleft.colon.paddl15',
-        complexion: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(5) > div.fleft.colon.paddl15',
-        physical_status: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(8) > div.fleft.colon.paddl15',
-        eating_habit: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(11) > div.fleft.colon.paddl15',
-        drinking_habit: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(14) > div.fleft.colon.paddl15',
-        smoking_habit: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(17) > div.fleft.colon.paddl15',
+        body_type: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[2]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(2) > div.fleft.colon.paddl15',
+        complexion: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[5]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(5) > div.fleft.colon.paddl15',
+        physical_status: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[8]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(8) > div.fleft.colon.paddl15',
+        eating_habit: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[11]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(11) > div.fleft.colon.paddl15',
+        drinking_habit: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[14]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(14) > div.fleft.colon.paddl15',
+        smoking_habit: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[9]/div[2]/div[2]/div/div[17]/div[2]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(15) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(17) > div.fleft.colon.paddl15',
 
-        religion: '#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(16) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(1) > div.fleft.colon.paddl15 > span',
-        caste: '#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(16) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(2) > div.fleft.colon.paddl15 > span',
+        religion: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[10]/div[2]/div[2]/div/div[1]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(16) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(1) > div.fleft.colon.paddl15 > span',
+        caste: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[10]/div[2]/div[2]/div/div[2]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(16) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(2) > div.fleft.colon.paddl15 > span',
 
         // location
-        country: '#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(1) > div.fleft.colon.paddl15.width175 > div',
-        state: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(4) > div.fleft.colon.paddl15.width175 > div',
-        city: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(7) > div.fleft.colon.paddl15.width175 > div > span',
-        citizenship: '#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(2) > div.fleft.colon.paddl15 > div',
-        resident_status: '#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(5) > div.fleft.colon.paddl15 > div',
+        country: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[11]/div[2]/div[2]/div/div[1]/div[2]/div',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(1) > div.fleft.colon.paddl15.width175 > div',
+        state: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[11]/div[2]/div[2]/div/div[4]/div[2]/div',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(4) > div.fleft.colon.paddl15.width175 > div',
+        city: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[11]/div[2]/div[2]/div/div[7]/div[2]/div/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(7) > div.fleft.colon.paddl15.width175 > div > span',
+        citizenship: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[11]/div[2]/div[2]/div/div[2]/div[2]/div',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(2) > div.fleft.colon.paddl15 > div',
+        resident_status: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[11]/div[2]/div[2]/div/div[5]/div[2]/div',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(18) > div:nth-child(2) > div.fleft.hdtxt > div > div:nth-child(5) > div.fleft.colon.paddl15 > div',
 
         // Education
-        education: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(1) > div.fleft.colon.paddl15.width400 > span',
-        education_detail: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(2) > div.fleft.colon.paddl15.width400 > span > span',
-        occupation: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(3) > div.fleft.colon.paddl15.width400 > span > span',
-        occupation_detail: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(4) > div.fleft.colon.paddl15.width400 > span > span',
-        annual_income: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(6) > div.fleft.colon.paddl15.width400 > span > span > span',
+        education: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[12]/div[2]/div[2]/div[1]/div[1]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(1) > div.fleft.colon.paddl15.width400 > span',
+        education_detail: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[12]/div[2]/div[2]/div[1]/div[2]/div[2]/span[1]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(2) > div.fleft.colon.paddl15.width400 > span > span',
+        occupation: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[12]/div[2]/div[2]/div[1]/div[3]/div[2]/span/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(3) > div.fleft.colon.paddl15.width400 > span > span',
+        occupation_detail: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[12]/div[2]/div[2]/div[1]/div[4]/div[2]/span[1]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(4) > div.fleft.colon.paddl15.width400 > span > span',
+        employed_in: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[12]/div[2]/div[2]/div[1]/div[5]/div[2]/span/span',
+        annual_income: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[12]/div[2]/div[2]/div[1]/div[6]/div[2]/span/span[1]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(19) > div:nth-child(2) > div.fleft.hdtxt > div.paddl2.paddt5 > div:nth-child(6) > div.fleft.colon.paddl15.width400 > span > span > span',
 
         // Family status
-        family_status: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(7) > div.fleft.colon.paddl15.width175 > span',
-        father_status: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(10) > div.fleft.colon.paddl15.width175 > span',
-        mom_status: '#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(11) > div.fleft.colon.paddl15 > span',
-        brothers: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(5) > div.fleft.colon.paddl15 > span',
-        sisters: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(8) > div.fleft.colon.paddl15 > span',
+        family_status: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[13]/div[2]/div[2]/div[1]/div[7]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(7) > div.fleft.colon.paddl15.width175 > span',
+        father_status: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[13]/div[2]/div[2]/div[1]/div[10]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(10) > div.fleft.colon.paddl15.width175 > span',
+        mom_status: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[13]/div[2]/div[2]/div[1]/div[11]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div.fleft > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(11) > div.fleft.colon.paddl15 > span',
+        brothers: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[13]/div[2]/div[2]/div[1]/div[5]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(5) > div.fleft.colon.paddl15 > span',
+        sisters: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[13]/div[2]/div[2]/div[1]/div[8]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(8) > div.fleft.colon.paddl15 > span',
 
-        about_family: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.paddt10 > div.txt-justify.lheight18 > span',
+        tamil_matrimony_calculation: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[15]/div[2]/div[2]/div',
 
-        expected_caste: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(24) > div:nth-child(5) > div > div:nth-child(3) > div.fleft > div > div:nth-child(2) > div.fleft.colon.paddl20 > div',
-        expected_education: '#moredivEducation',
-        expected_occupation: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(24) > div:nth-child(5) > div > div:nth-child(4) > div.fleft > div > div:nth-child(2) > div.fleft.colon.paddl20 > div',
+        about_family: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div/div[13]/div[2]/div[2]/div[3]/div[2]/span',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.paddt10 > div.txt-justify.lheight18 > span',
 
-        is_phone_number: '#titleDisp > div.boldtxt.paddb10.ignblkpositive',
-        is_photo: '#useracticonsimgs > div > a'
+        expected_caste: '//*[@id="moredivCaste"]',
+        //'//*[@id="vpcontent"]/table/tbody/tr/td[1]/div/div[15]/div[6]/div/div[3]/div[2]/div/div[2]/div[2]/div',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(24) > div:nth-child(5) > div > div:nth-child(3) > div.fleft > div > div:nth-child(2) > div.fleft.colon.paddl20 > div',
+        expected_education: '//*[@id="moredivEducation"]',
+        //'#moredivEducation',
+        expected_occupation: '//*[@id="moredivOccupation"]',
+        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(24) > div:nth-child(5) > div > div:nth-child(4) > div.fleft > div > div:nth-child(2) > div.fleft.colon.paddl20 > div',
+
+        is_phone_number: '//*[@id="titleDisp"]/div[1]',
+        //'#titleDisp > div.boldtxt.paddb10.ignblkpositive',
+        is_photo: '//*[@id="useracticonsimgs"]/div[1]/a'
+            //'#useracticonsimgs > div > a'
     }
 }
