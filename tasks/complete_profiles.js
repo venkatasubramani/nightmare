@@ -6,6 +6,7 @@ var incompleteProfiles = [];
 
 
 var Datastore = require('nedb'),
+    fs = require('fs'),
     db_profiles = new Datastore({
         filename: 'db/profiles',
         autoload: true
@@ -52,7 +53,8 @@ function processIncompleteProfiles() {
         };
 
 
-    var DIR_LOGS = 'logs',
+    var DIR_SCREENSHOTS = 'logs/screenshots',
+        DIR_PAGECONTENTS = 'logs/pagecontents',
         DIR_VIEW = 'complete_profiles',
         URL = 'http://www.tamilmatrimony.com/',
         step = 0,
@@ -127,13 +129,19 @@ function processIncompleteProfiles() {
         });
     });
 
+    spooky.on('write_file', function(params) {
+        var mat_id = params.mat_id,
+            pageContent = params.page_content;
+        fs.writeFile(DIR_PAGECONTENTS + '/' + mat_id + '.html', pageContent, function() {});
+    });
+
     // ---------- Main Event
 
     spooky.on('start_tamil_matrimony', function() {
         this.then([{
             URL: URL,
             DIR_VIEW: DIR_VIEW,
-            DIR_LOGS: DIR_LOGS,
+            DIR_SCREENSHOTS: DIR_SCREENSHOTS,
             step: step,
             queryParams: queryParams,
             incompleteProfiles: incompleteProfiles,
@@ -145,7 +153,7 @@ function processIncompleteProfiles() {
 
             function step_capture(image) {
                 step++;
-                var imagePath = DIR_LOGS + '/' + DIR_VIEW + '/' + step + '_' + image + '.png';
+                var imagePath = DIR_SCREENSHOTS + '/' + DIR_VIEW + '/' + step + '_' + image + '.png';
                 console.log('Saving screen capture to ' + imagePath);
                 this.capture(imagePath);
             }
@@ -189,32 +197,31 @@ function processIncompleteProfiles() {
                     i = 0;
 
                 this.repeat(keys.length, function() {
-                    var key = keys[i];
-
                     this.then(function() {
-                        var selector = profileSelectors[key],
-                            value = '';
+                        /*var value = '',
+                            key = keys[i],
+                            selector = profileSelectors[key];
 
                         switch (key) {
                             case 'is_phone_number':
                                 viewPhoneNumber = value =
-                                    (casper.fetchText(selector).trim() == "You viewed this member's phone number.");
+                                    (this.fetchText(selector).trim() == "You viewed this member's phone number.");
                                 break;
                             case 'is_photo':
-                                getPhotoLinks = value = (casper.exists(selector) === true) ? true : false;
+                                getPhotoLinks = value = (this.exists(selector) === true) ? true : false;
                             case 'last_login':
-                                value = casper.fetchText(selector);
+                                value = this.fetchText(selector);
                                 value = value.indexOf(':') == -1 ? value : value.split(':')[1].trim();
                                 break;
                             default:
-                                value = casper.fetchText(selector).trim();
+                                value = this.fetchText(selector).trim();
                                 break;
                         }
-                        console.log(value);
+                        console.log(key,value);
                         profile[key] = value;
+                        i++;*/
+                        console.log(this.fetchText('#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(7) > div.fleft.colon.paddl15.width175 > span'))
                     });
-
-                    i++;
                 });
 
                 this.then(function() {
@@ -313,9 +320,15 @@ function processIncompleteProfiles() {
                 });
 
                 this.each(urls, function(self, link) {
-                    console.log('Opening the link ' + link);
+                    var matid = link.split('=')[1].trim();
+
                     self.thenOpen(link, function() {
+                        console.log('Opening the link ' + link);
                         this.echo(this.getTitle());
+                        this.emit('write_file', {
+                            mat_id: matid,
+                            page_content: this.getPageContent()
+                        });
                         if (this.getTitle() == 'profile.tamilmatrimony.com') {
                             delete_profile.call(this, link);
                         } else
