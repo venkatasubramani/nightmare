@@ -1,17 +1,53 @@
 0 info it worked if it ends with ok
-1 verbose cli [ '/usr/bin/node', '/usr/bin/npm', 'start' ]
-2 info using npm@1.4.28
-3 info using node@v0.10.34
-4 error Error: ENOENT, open '/root/scraper/package.json'
-5 error If you need help, you may report this *entire* log,
-5 error including the npm and node versions, at:
-5 error     <http://github.com/npm/npm/issues>
-6 error System Linux 2.6.32-504.16.2.el6.rvbd.33.x86_64
-7 error command "/usr/bin/node" "/usr/bin/npm" "start"
-8 error cwd /root/scraper
-9 error node -v v0.10.34
-10 error npm -v 1.4.28
-11 error path /root/scraper/package.json
-12 error code ENOENT
-13 error errno 34
-14 verbose exit [ 34, true ]
+1 verbose cli [ 'node', '/usr/local/bin/npm', 'install', '-g', 'casperjs' ]
+2 info using npm@2.11.3
+3 info using node@v0.12.7
+4 verbose install initial load of /usr/local/lib/package.json
+5 verbose readDependencies loading dependencies from /usr/local/lib/package.json
+6 silly cache add args [ 'casperjs', null ]
+7 verbose cache add spec casperjs
+8 silly cache add parsed spec { raw: 'casperjs',
+8 silly cache add   scope: null,
+8 silly cache add   name: 'casperjs',
+8 silly cache add   rawSpec: '',
+8 silly cache add   spec: '*',
+8 silly cache add   type: 'range' }
+9 silly addNamed casperjs@*
+10 verbose addNamed "*" is a valid semver range for casperjs
+11 silly addNameRange { name: 'casperjs', range: '*', hasData: false }
+12 silly mapToRegistry name casperjs
+13 silly mapToRegistry using default registry
+14 silly mapToRegistry registry http://registry.npmjs.org/
+15 silly mapToRegistry uri http://registry.npmjs.org/casperjs
+16 verbose addNameRange registry:http://registry.npmjs.org/casperjs not in flight; fetching
+17 verbose get http://registry.npmjs.org/casperjs not expired, no request
+18 silly addNameRange number 2 { name: 'casperjs', range: '*', hasData: true }
+19 silly addNameRange versions [ 'casperjs', [ '1.1.0-beta2', '1.1.0-beta3' ] ]
+20 verbose stack Error: No compatible version found: casperjs@'*'
+20 verbose stack Valid install targets:
+20 verbose stack ["1.1.0-beta2","1.1.0-beta3"]
+20 verbose stack
+20 verbose stack     at installTargetsError (/usr/local/lib/node_modules/npm/lib/cache/add-named.js:274:12)
+20 verbose stack     at next (/usr/local/lib/node_modules/npm/lib/cache/add-named.js:253:17)
+20 verbose stack     at setData (/usr/local/lib/node_modules/npm/lib/cache/add-named.js:230:5)
+20 verbose stack     at RES (/usr/local/lib/node_modules/npm/node_modules/inflight/inflight.js:23:14)
+20 verbose stack     at f (/usr/local/lib/node_modules/npm/node_modules/once/once.js:17:25)
+20 verbose stack     at fixName (/usr/local/lib/node_modules/npm/lib/cache/add-named.js:29:5)
+20 verbose stack     at CachingRegistryClient.get_ (/usr/local/lib/node_modules/npm/lib/cache/caching-client.js:125:16)
+20 verbose stack     at /usr/local/lib/node_modules/npm/lib/cache/caching-client.js:91:14
+20 verbose stack     at evalmachine.<anonymous>:334:14
+20 verbose stack     at /usr/local/lib/node_modules/npm/node_modules/graceful-fs/graceful-fs.js:102:5
+21 verbose cwd /Users/vvellaichamy/Projects/nightmare
+22 error Darwin 14.4.0
+23 error argv "node" "/usr/local/bin/npm" "install" "-g" "casperjs"
+24 error node v0.12.7
+25 error npm  v2.11.3
+26 error code ETARGET
+27 error notarget No compatible version found: casperjs@'*'
+27 error notarget Valid install targets:
+27 error notarget ["1.1.0-beta2","1.1.0-beta3"]
+27 error notarget
+27 error notarget This is most likely not a problem with npm itself.
+27 error notarget In most cases you or one of your dependencies are requesting
+27 error notarget a package version that doesn't exist.
+28 verbose exit [ 1, true ]

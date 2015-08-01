@@ -160,12 +160,11 @@ function processIncompleteProfiles() {
                     console.log(step + ': ' + stepDescription);
 
                     console.log('Clicking the link - ' + this.fetchText(selector));
-                    this.click(selector, 'a');
-
-                    return this.wait(delay, function() {
-                        step_capture.call(this, stepDescription.replace(/ /g, "_"));
-                        return true;
-                    })
+                    return this.thenClick(selector, function() {
+                        this.wait(delay, function() {
+                            step_capture.call(this, stepDescription.replace(/ /g, "_"));
+                        });
+                    });
                 }, function fail() {
                     console.log('Failed: ' + stepDescription);
                     step_capture.call(this, stepDescription.replace(/ /g, "_"));
@@ -218,28 +217,6 @@ function processIncompleteProfiles() {
                     i++;
                 });
 
-                /*keys.forEach(function(key) {
-                    var selector = profileSelectors[key],
-                        value = '';
-
-                    switch (key) {
-                        case 'is_phone_number':
-                            viewPhoneNumber = value =
-                                (casper.fetchText(selector).trim() == "You viewed this member's phone number.");
-                            break;
-                        case 'is_photo':
-                            getPhotoLinks = value = (casper.exists(selector) === true) ? true : false;
-                        case 'last_login':
-                            value = casper.fetchText(selector);
-                            value = value.indexOf(':') == -1 ? value : value.split(':')[1].trim();
-                            break;
-                        default:
-                            value = casper.fetchText(selector).trim();
-                            break;
-                    }
-                    console.log(value);
-                    profile[key] = value;
-                });*/
                 this.then(function() {
                     if (viewPhoneNumber) {
 

@@ -33,11 +33,9 @@ db_profiles.find({
     profile_completed: true,
     profile_published: false
 }, function(err, completedProfiles) {
-    var dummy = [];
-    dummy.push(completedProfiles[0]);
     if (completedProfiles && completedProfiles.length > 0) {
         console.log('publishing ' + completedProfiles.length + ' profiles');
-        publish_trello(dummy);
+        publish_trello(completedProfiles);
     } else console.log('Nothing to process');
 });
 
@@ -46,16 +44,17 @@ function publish_trello(completedProfiles) {
         .then(function(boardId) {
             return getList(boardId, NEWPROFILESLIST)
         })
-        .then(createCards)
-        .then(function(data) {
-            console.log(data)
+        .then(function(listId) {
+            return createCards(listId, completedProfiles);
+        })
+        .then(function() {
+            console.log('All profiles are published in Trello.')
         })
         .catch(function(err) {
             console.log(err);
         })
 }
 
-// --- Promise functions
 function getBoardId(organization, boardName) {
 
     var deferred = Q.defer(),
@@ -93,46 +92,72 @@ function getList(boardId, listName) {
     return deferred.promise;
 }
 
-function createCards(newProfilesListId, completedProfiles) {
+function createCards(newProfilesListId, profiles) {
     var deferred = Q.defer();
 
-    if (completedProfiles && completedProfiles.length > 0) {
+    if (profiles && profiles.length > 0) {
         var index = 0,
             condition = function() {
-                console.log(index < completedProfiles.length);
-                return index < completedProfiles.length;
+                return index < profiles.length;
             };
 
         return promiseWhile(condition, function() {
-            var completedProfile = completedProfiles[index];
+            var profile = profiles[index];
             index++;
 
-            return getTrelloAction(newProfilesListId, completedProfile)
-                .then(function(action) {
-                    return action();
+            return getCardId(newProfilesListId, profile)
+                .then(function(cardid) {
+                    return getFullProfile(profile)
+                        .then(function(fullProfile) {
+                            return updateCard(cardid, fullProfile);
+                        })
+                        .then(function(data) {
+                            console.log(data);
+                        });
                 });
         });
     }
+
+    return deferred.promise;
 }
 
-function getTrelloAction(listid, profile) {
+function getFullProfile(profile) {
     var deferred = Q.defer();
 
-    // Check if there is a card already
-    db_trello_profiles.find({
-        mat_id: completeProfile.mat_id
-    }, processCard);
+    db_completed_profiles.find({
+        mat_id: profile.mat_id
+    }, function(err, fullProfiles) {
+        if (err) deferred.reject(err);
 
-    function processCard(err, trelloRecord) {
-        if (trelloRecord.length > 0) {
-            deferred.resolve(updateCard(trelloRecord.card_id, completeProfile));
+        if (fullProfiles.length > 0)
+            deferred.resolve(fullProfiles[0]);
+        else
+            deferred.reject('Could not locate completed profile.');
+    })
+
+    return deferred.promise;
+}
+
+function getCardId(listid, profile) {
+    var deferred = Q.defer();
+
+    db_trello_profiles.find({
+        mat_id: profile.mat_id
+    }, function(err, trelloRecords) {
+        if (err) deferred.reject(err);
+
+        // Check if there is a card already, otherwise create it
+        if (trelloRecords.length > 0) {
+            var cardid = trelloRecords[0].card_id;
+            console.log('Card(' + cardid + ') already available for ' + profile.mat_id)
+            deferred.resolve(cardid);
         } else {
-            return createCard(listid, completeProfile)
+            createCard(listid, profile)
                 .then(function(card) {
-                    deferred.resolve(updateCard(card.id, completeProfile));
-                });
+                    deferred.resolve(card.id);
+                })
         }
-    }
+    });
 
     return deferred.promise;
 }
@@ -143,9 +168,8 @@ function createCard(listId, profile) {
         var deferred = Q.defer(),
             url = "/1/lists/" + listId + '/cards';
 
-        var name = profile.mat_id + ' - ' + profile.name + ' (' + profile.age + ', ' + profile.height_feet + '\'' + profile.height_inch + '\")';
         var options = {
-            name: name
+            name: profile.mat_id
         }
 
         t.post(url, options, function(err, card) {
@@ -163,27 +187,16 @@ function createCard(listId, profile) {
             fieldName: 'mat_id',
             unique: true
         }, function(err) {
-            db_trello_profiles.insert({
-                mat_id: profile.mat_id,
-                card_id: card.id
-            }, function(err, data) {
-                if (err) {
-                    console.log('Card exists already. Updating the card');
-
-                    db_trello_profiles.update({
-                        mat_id: profile.mat_id
-                    }, {
-                        $set: {
-                            card_id: card.id
-                        }
-                    }, {}, function(err, numReplaced) {
-                        if (err) deferred.reject(err);
-                        console.log('card for ' + profile.mat_id + ' updated');
-                    });
-                } else {
-                    console.log('card for ' + profile.mat_id + ' generated');
-                    deferred.resolve(card);
+            db_trello_profiles.update({
+                mat_id: profile.mat_id
+            }, {
+                $set: {
+                    card_id: card.id
                 }
+            }, {}, function(err, numReplaced) {
+                if (err) deferred.reject(err);
+                console.log('Card (' + card.id + ') for ' + profile.mat_id + ' updated');
+                deferred.resolve(card);
             });
         });
 
@@ -191,21 +204,26 @@ function createCard(listId, profile) {
     }
 
     return _createCard()
-        .then(_saveCard);
+        .then(_saveCard)
+        .catch(function() {
+            console.log('Fail: Card could not be created for ' + profile.mat_id)
+        });
 }
 
 function updateCard(cardid, profile) {
 
-    /*return Q.all([updateCardDetails(), addLabels()]).then(function() {
-        console.log('Card updated');
-    }).catch(function(err) {
-        console.log('ERROR:' + err);
-    });; //, updatePhotos()]);*/
-    return updateCardDetails(cardid, profile);
+    return Q.all([
+            updateName(cardid, profile),
+            updateDescription(cardid, profile),
+            addLabels(cardid, profile)
+        ])
+        .catch(function() {
+            console.log('Fail: Card could not be updated for ' + profile.mat_id)
+        });
 }
 
 // Add Labels
-function addLabel(cardid, label) {
+function trello_card_updateLabel(cardid, label) {
     var deferred = Q.defer(),
         url = "/1/cards/" + cardid + '/labels';
 
@@ -219,8 +237,8 @@ function addLabel(cardid, label) {
     return deferred.promise;
 }
 
-// Add detailed description
-function updateDesc(description) {
+// Update card description
+function trello_card_updateDesc(cardid, description) {
     var deferred = Q.defer(),
         url = "/1/cards/" + cardid + '/desc';
 
@@ -236,8 +254,25 @@ function updateDesc(description) {
     return deferred.promise;
 }
 
+// update card name
+function trello_card_updateName(cardid, name) {
+    var deferred = Q.defer(),
+        url = "/1/cards/" + cardid + '/name';
+
+    var options = {
+        value: name
+    };
+
+    t.put(url, options, function(err, data) {
+        if (err) deferred.reject(err);
+        deferred.resolve(data);
+    });
+
+    return deferred.promise;
+}
+
 // Add Attachments
-function updatePhoto(photo) {
+function trello_card_updateAttachment(photo) {
 
     var deferred = Q.defer(),
         url = "/1/cards/" + cardid + '/attachments';
@@ -267,15 +302,16 @@ function updatePhotos() {
         return promiseWhile(condition, function() {
             var photo = profile.photos.full_size[index];
             index++;
-            return updatePhoto(photo);
-        }).then(function() {
-            console.log("All photos uploaded");
-        }).done();
+            return trello_card_updateAttachment(photo);
+        });
     }
 }
 
 function addLabels(cardid, profile) {
-    return Q.all([countryLabel(cardid, profile), educationLabel(cardid, profile)]);
+    return Q.all([countryLabel(cardid, profile), educationLabel(cardid, profile)])
+        .catch(function() {
+            console.log('Labels already added to ' + profile.mat_id)
+        });;
 }
 
 function countryLabel(cardid, profile) {
@@ -292,7 +328,7 @@ function countryLabel(cardid, profile) {
         }
     }
 
-    return addLabel(cardid, options);
+    return trello_card_updateLabel(cardid, options);
 }
 
 function educationLabel(cardid, profile) {
@@ -301,10 +337,15 @@ function educationLabel(cardid, profile) {
         name: profile.education
     };
 
-    return addLabel(cardid, options);
+    return trello_card_updateLabel(cardid, options);
 }
 
-function updateCardDetails(cardid, profile) {
+function updateName(cardid, profile) {
+    var name = profile.mat_id + ' - ' + profile.name + ' (' + profile.age + ', ' + profile.height_feet + '\'' + profile.height_inch + '\")';
+    return trello_card_updateName(cardid, name);
+}
+
+function updateDescription(cardid, profile) {
     var description = '';
 
     description += '\n' + profile.city + ', ' + profile.state + ', ' + profile.country + ' (' + profile.resident_status + ')';
@@ -326,7 +367,7 @@ function updateCardDetails(cardid, profile) {
     description += '\n\n' + 'About Family';
     description += '\n' + profile.about_family;
 
-    return updateDesc(cardid, description);
+    return trello_card_updateDesc(cardid, description);
 }
 
 
