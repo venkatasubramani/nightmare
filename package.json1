@@ -1,15 +1,24 @@
 {
   "name": "nightmare",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
-  "main": "tasks/download_shortlisted_profiles",
+  "main": "index.js",
   "dependencies": {
-    "cloudinary": "^1.2.2",
+    "babel": "^5.8.9",
     "exceljs": "^0.2.3",
-    "lodash": "^3.10.0",
+    "express-react-views": "^0.8.1",
+    "js-beautify": "^1.5.10",
+    "module-babel": "^0.0.2",
     "nedb": "^1.1.2",
+    "node-trello": "^1.1.2",
+    "object-assign": "^3.0.0",
+    "promise": "^7.0.3",
     "q": "^1.4.1",
-    "spooky": "^0.2.5"
+    "querystring": "^0.2.0",
+    "react": "^0.13.3",
+    "spooky": "^0.2.5",
+    "unoconv": "^0.1.2",
+    "xls-to-json": "^0.3.2"
   },
   "devDependencies": {},
   "scripts": {
@@ -19,7 +28,7 @@
     "type": "git",
     "url": "https://github.com/venkatasubramani/nightmare.git"
   },
-  "author": "venkatvellaichamy@gmail.com",
+  "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/venkatasubramani/nightmare/issues"
