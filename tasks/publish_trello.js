@@ -323,6 +323,7 @@ function updatePhotos(cardid, profile) {
 
         return promiseWhile(condition, function() {
             var photo = profile.photos.clouded[index];
+            photo = 'http://res.cloudinary.com/dysqj6szg/image/upload/v1438580190/' + photo + '.jpg';
             index++;
             return trello_card_updateAttachment(cardid, photo);
         });
@@ -375,6 +376,14 @@ function updateDescription(cardid, profile) {
         description += '\n' + 'Ph: ' + profile.primary_phone + ', ' + profile.secondary_phone;
     }
 
+    description += '\n' + '**Family Status:* ' + profile.family_status + ' . ' + '*Mother:* ' + profile.mom_status;
+    description += '\n' + '**Father:** ' + profile.father_status + ' . ' + '*Mother:* ' + profile.mom_status;
+    description += '\n' + '**Brothers:** ' + profile.brothers + ' . ' + '*Sisters:* ' + profile.sisters;
+    description += '\n\n' + '**About Her**';
+    description += '\n' + profile.description;
+    description += '\n\n' + '**About Family**';
+    description += '\n' + profile.about_family;
+
     description += '\n\n';
     if (profile.photos && profile.photos.thumbnails) {
         profile.photos.thumbnails.forEach(function(thumbnail, index) {
@@ -382,12 +391,7 @@ function updateDescription(cardid, profile) {
         });
     }
 
-    description += '\n' + '*Father:* ' + profile.family_status + ' . ' + '*Mother:* ' + profile.mom_status;
-    description += '\n' + '*Brothers:* ' + profile.brothers + ' . ' + '*Sisters:* ' + profile.sisters;
-    description += '\n\n' + 'About Her';
-    description += '\n' + profile.description;
-    description += '\n\n' + 'About Family';
-    description += '\n' + profile.about_family;
+    description += '\n\n' + '[View this profile in tamilmatrimony >>](http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=' + profile.mat_id + ')';
 
     return trello_card_updateDesc(cardid, description);
 }
