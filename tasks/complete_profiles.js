@@ -477,10 +477,11 @@ function processIncompleteProfiles() {
         //'#moredivEducation',
         expected_occupation: '//*[@id="moredivOccupation"]',
         //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(24) > div:nth-child(5) > div > div:nth-child(4) > div.fleft > div > div:nth-child(2) > div.fleft.colon.paddl20 > div',
+        looking_for: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div/div[15]/div[6]/div/div[5]/div[7]',
 
         is_phone_number: '#titleDisp > div.boldtxt.paddb10.ignblkpositive',
         //'//*[@id="titleDisp"]/div[1]',
         is_photo: '#useracticonsimgs > div > a'
-            //'//*[@id="useracticonsimgs"]/div[1]/a'
+        //'//*[@id="useracticonsimgs"]/div[1]/a'
     }
 }

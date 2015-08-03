@@ -373,16 +373,26 @@ function updateDescription(cardid, profile) {
 
     description += '\n' + profile.city + ', ' + profile.state + ', ' + profile.country + ' (' + profile.resident_status + ')';
     if (profile.is_phone_number) {
-        description += '\n' + 'Ph: ' + profile.primary_phone + ', ' + profile.secondary_phone;
+        description += '\n```' + 'Ph: ' + profile.primary_phone + ', ' + profile.secondary_phone + '```';
     }
 
+    description += '\n' + '**Profession**'
+    description += '\n' + '*Education:* ' + profile.education + ' (' + profile.education_detail + ')'
+    description += '\n' + '*Occupation:* ' + profile.occupation + ' (' + profile.occupation_detail + ')'
+    description += '\n' + '*Employed in:* ' + profile.employed_in + ' (' + profile.annual_income + ')'
+    description += '\n\n' + '**Family**'
     description += '\n' + '*Family Status:* ' + profile.family_status
-    description += '\n' + '*Father:* ' + profile.father_status + ' . ' + '*Mother:* ' + profile.mom_status;
-    description += '\n' + '*Brothers:* ' + profile.brothers + ' . ' + '*Sisters:* ' + profile.sisters;
+    description += '\n' + '*Father:* ' + profile.father_status + '\n' + '*Mother:* ' + profile.mom_status;
+    description += '\n' + '*Brothers:* ' + profile.brothers + '\n' + '*Sisters:* ' + profile.sisters;
     description += '\n\n' + '**About Her**';
     description += '\n' + profile.description;
     description += '\n\n' + '**About Family**';
     description += '\n' + profile.about_family;
+    description += '\n\n' + '**Expectation**';
+    description += '\n' + profile.looking_for;
+    description += '\n' + '*Caste:* ' + profile.expected_caste;
+    description += '\n' + '*Education:* ' + profile.expected_education;
+    description += '\n' + '*Occupation:* ' + profile.expected_occupation;
 
     description += '\n\n';
     if (profile.photos && profile.photos.thumbnails) {
