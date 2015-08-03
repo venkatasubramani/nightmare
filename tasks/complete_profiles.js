@@ -49,7 +49,7 @@ function processIncompleteProfiles() {
                 transport: 'http'
             },
             casper: {
-                logLevel: 'debug',
+                logLevel: 'error',
                 verbose: true,
                 options: {
                     clientScripts: ['https://code.jquery.com/jquery-2.1.4.js']
@@ -224,11 +224,8 @@ function processIncompleteProfiles() {
                                     (this.fetchText(selector).trim() == "You viewed this member's phone number.");
                                 break;
                             case 'is_photo':
-                                this.emit('write_file', {
-                                    mat_id: profile.mat_id + 'is_photo',
-                                    page_content: this.getPageContent()
-                                });
-                                getPhotoLinks = value = (this.getElementsInfo(selector).length > 0) ? true : false;
+                                getPhotoLinks = value = this.exists(selector) ? true : false;
+                                break;
                             case 'last_login':
                                 selector = xPath(selector);
                                 value = this.fetchText(selector);
@@ -302,7 +299,7 @@ function processIncompleteProfiles() {
                                     page_content: this.getPageContent()
                                 });
 
-                                
+
                                 profile.photos = {};
                                 profile.photos.thumbnails = this.getElementsAttribute('#gallery > div:nth-child(1) > div.ad-nav.fleft > div.ad-thumbs > ul a img', 'src');
                                 profile.photos.full_size = this.getElementsAttribute('#gallery > div:nth-child(1) > div.ad-nav.fleft > div.ad-thumbs > ul a', 'href');
@@ -336,13 +333,22 @@ function processIncompleteProfiles() {
                 selector: '#close > center > div.hpmainwraper > div.hpmainwraper.pos-relative > div.innerwrapper.pos-relative.paddt10 > div.fright > form > div.fleft.paddl8 > input.hp-button.small'
             });
 
-            click_link.call(this, {
-                stepDescription: 'Skipping the promotion page',
-                selector: 'body > center > div.wrapper-max > div > div.paddt10 > div.fright > div > a'
-                //'body > div > div:nth-child(2) > div:nth-child(4) > a'
+            this.then(function() {
+                if (this.exists('body > div > div:nth-child(2) > div:nth-child(4) > a')) {
+                    click_link.call(this, {
+                        stepDescription: 'Skipping the promotion page',
+                        selector: 'body > div > div:nth-child(2) > div:nth-child(4) > a'
+                            //'body > center > div.wrapper-max > div > div.paddt10 > div.fright > div > a'
+                    });
+                } else {
+                    console.log('Going to home page!')
+                    this.thenOpen('http://profile.tamilmatrimony.com/login/myhome.php?MS=1&gaact=addselfie&gasrc=INTRMDTMH', function(){
+                        this.wait(3000, function() {
+                            step_capture.call(this, 'homepage');
+                        })
+                    });
+                }
             });
-
-            //this.thenOpen('http://profile.tamilmatrimony.com/login/myhome.php?frmpg=loginpg&MS=1');
 
             //---------------------- Shortlisted Profiles
 

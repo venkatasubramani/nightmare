@@ -1,5 +1,6 @@
 var Datastore = require('nedb'),
     cloudinary = require('cloudinary');
+_ = require('lodash');
 
 var API_KEY = '467712173355381',
     API_SECRET = 'ArU58r4jqVpuHadg-SegWSRKr8o',
@@ -29,23 +30,65 @@ db_profiles.find({
 function getFullProfile(err, profiles) {
     if (err) console.log(err);
 
+    db_completed_profiles.find({
+        is_photo: true
+    }, function(err, completed_profiles) {
+        if (err) console.log(err);
+
+        processCompletedProfiles(profiles, completed_profiles)
+    });
+}
+
+function processCompletedProfiles(profiles, completed_profiles) {
     if (profiles && profiles.length > 0) {
         profiles.forEach(function(profile) {
-
-            db_completed_profiles.find({
-                mat_id: profile.mat_id,
-                photos: { $exists: true }
-            }, );
-
+            var fullProfile = _.filter(completed_profiles, _.matches({
+                'mat_id': profile.mat_id
+            }));
+            if (fullProfile.length > 0) cloudify(fullProfile[0]);
         });
     }
 }
 
-
-/*cloudinary.uploader.upload('http://m-imgs.matrimonycdn.com/photos/2015/04/04/00/M3816471_pHXPG_32867.jpg',
-    function(result) {
+function cloudify(profile) {
+    /*cloudinary.api.delete_resources_by_prefix(profile.mat_id + '/', function(result) {
         console.log(result)
+    });*/
+    var photos = profile.photos ? profile.photos.full_size : null;
+    if (!photos) return;
+
+    photos.forEach(function(photo) {
+        cloudinary.uploader.upload(photo,
+            function(result) {
+                console.log(result);
+                updateProfileWithImageAddress(profile.mat_id, result);
+            }, {
+                folder: profile.mat_id,
+                use_filename: true
+            });
+    })
+}
+
+function updateProfileWithImageAddress(mat_id, cloudResult) {
+    db_completed_profiles.update({
+        mat_id: mat_id
     }, {
-        folder: 'M3816471'
+        $addToSet: {
+            'photos.clouded': cloudResult.public_id
+        }
+    }, {}, function(err, numReplaced) {
+        if (err) console.log(mat_id + ' could not be inserted/ updated.')
+        console.log(mat_id + ' updated');
+        console.log(arguments);
+        
+        db_profiles.update({
+            mat_id: mat_id
+        }, {
+            $set: {
+                'is_clouded': true
+            }
+        }, {}, function(err, numReplaced) {
+            console.log(arguments);
+        });
     });
-*/
+}
