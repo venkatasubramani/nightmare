@@ -110,14 +110,29 @@ function createCards(newProfilesListId, profiles) {
                     return getFullProfile(profile)
                         .then(function(fullProfile) {
                             return updateCard(cardid, fullProfile);
-                        })
-                        .then(function(data) {
-                            console.log(data);
                         });
                 });
         });
     }
 
+    return deferred.promise;
+}
+
+function updateProfile(data) {
+    var deferred = Q.defer();
+    if (!data) deferred.reject('Something went wrong before saving the profile');
+
+    var profile = data.profile;
+    db_profiles.update({
+        mat_id: profile.mat_id
+    }, {
+        $set: {
+            profile_published: true
+        }
+    }, {}, function(err, numReplaced) {
+        console.log('Profile ' + profile.mat_id + ' published');
+        deferred.resolve(Q(undefined));
+    });
     return deferred.promise;
 }
 
@@ -215,8 +230,15 @@ function updateCard(cardid, profile) {
     return Q.all([
             updateName(cardid, profile),
             updateDescription(cardid, profile),
-            addLabels(cardid, profile)
+            addLabels(cardid, profile),
+            updatePhotos(cardid, profile)
         ])
+        .then(function(card) {
+            return updateProfile({
+                card: card,
+                profile: profile
+            })
+        })
         .catch(function() {
             console.log('Fail: Card could not be updated for ' + profile.mat_id)
         });
@@ -272,7 +294,7 @@ function trello_card_updateName(cardid, name) {
 }
 
 // Add Attachments
-function trello_card_updateAttachment(photo) {
+function trello_card_updateAttachment(cardid, photo) {
 
     var deferred = Q.defer(),
         url = "/1/cards/" + cardid + '/attachments';
@@ -292,17 +314,17 @@ function trello_card_updateAttachment(photo) {
 
 // ------------------ Private functions
 
-function updatePhotos() {
-    if (profile.photos && profile.photos.full_size && profile.photos.full_size.length > 0) {
+function updatePhotos(cardid, profile) {
+    if (profile.photos && profile.photos.clouded && profile.photos.clouded.length > 0) {
         var index = 0,
             condition = function() {
-                return index < profile.photos.full_size.length;
+                return index < profile.photos.clouded.length;
             };
 
         return promiseWhile(condition, function() {
-            var photo = profile.photos.full_size[index];
+            var photo = profile.photos.clouded[index];
             index++;
-            return trello_card_updateAttachment(photo);
+            return trello_card_updateAttachment(cardid, photo);
         });
     }
 }
