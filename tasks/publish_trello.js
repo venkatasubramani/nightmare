@@ -11,7 +11,7 @@ var t = new Trello(trelloPublicKey, trelloToken);
 var Datastore = require('nedb');
 
 var ORGANIZATION = 'projectnighmare',
-    BOARD = 'testbed',
+    BOARD = 'goldrush',
     NEWPROFILESLIST = 'New Profiles';
 
 var db_profiles = new Datastore({
