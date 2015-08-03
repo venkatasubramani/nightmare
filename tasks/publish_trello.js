@@ -376,9 +376,9 @@ function updateDescription(cardid, profile) {
         description += '\n' + 'Ph: ' + profile.primary_phone + ', ' + profile.secondary_phone;
     }
 
-    description += '\n' + '**Family Status:* ' + profile.family_status + ' . ' + '*Mother:* ' + profile.mom_status;
-    description += '\n' + '**Father:** ' + profile.father_status + ' . ' + '*Mother:* ' + profile.mom_status;
-    description += '\n' + '**Brothers:** ' + profile.brothers + ' . ' + '*Sisters:* ' + profile.sisters;
+    description += '\n' + '*Family Status:* ' + profile.family_status
+    description += '\n' + '*Father:* ' + profile.father_status + ' . ' + '*Mother:* ' + profile.mom_status;
+    description += '\n' + '*Brothers:* ' + profile.brothers + ' . ' + '*Sisters:* ' + profile.sisters;
     description += '\n\n' + '**About Her**';
     description += '\n' + profile.description;
     description += '\n\n' + '**About Family**';
