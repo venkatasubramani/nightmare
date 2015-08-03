@@ -3,11 +3,10 @@ var incompleteProfiles = [];
     mat_id: 'T2898073',
     url: 'http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=' + 'T2898073'
 });*/
-
-var cloudinary = require('cloudinary');
 var Datastore = require('nedb'),
-    fs = require('fs'),
-    db_profiles = new Datastore({
+    fs = require('fs');
+
+var db_profiles = new Datastore({
         filename: 'db/profiles',
         autoload: true
     }),
@@ -32,8 +31,8 @@ db_profiles.find({
 }, function(err, docs) {
     incompleteProfiles = docs;
     /*incompleteProfiles.push({
-        mat_id: 'T2898073',
-        url: 'http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=' + 'T2898073'
+        mat_id: 'M3814022',
+        url: 'http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=' + 'M3814022'
     });*/
 
     if (incompleteProfiles.length > 0) {
@@ -41,14 +40,6 @@ db_profiles.find({
         processIncompleteProfiles();
     } else console.log('Nothing to process');
 });
-
-cloudinary.config({
-    cloud_name: 'dysqj6szg',
-    api_key: '467712173355381',
-    api_secret: 'ArU58r4jqVpuHadg-SegWSRKr8o'
-});
-
-//var CLOUDINARY_URL=cloudinary://467712173355381:ArU58r4jqVpuHadg-SegWSRKr8o@dysqj6szg
 
 function processIncompleteProfiles() {
 
@@ -58,7 +49,7 @@ function processIncompleteProfiles() {
                 transport: 'http'
             },
             casper: {
-                logLevel: 'error',
+                logLevel: 'debug',
                 verbose: true,
                 options: {
                     clientScripts: ['https://code.jquery.com/jquery-2.1.4.js']
@@ -157,19 +148,6 @@ function processIncompleteProfiles() {
         fs.writeFile(DIR_PAGECONTENTS + '/' + mat_id + '.html', pageContent, function() {});
     });
 
-    spooky.on('cloudify_images', function(profile) {
-        var full_size_images = profile.images.full_size;
-
-        full_size_images.each(function(photo) {
-            cloudinary.uploader.upload(photo,
-                function(result) {
-                    console.log(result)
-                }, {
-                    folder: profile.mat_id
-                });
-        });
-    });
-
     // ---------- Main Event
 
     spooky.on('start_tamil_matrimony', function() {
@@ -238,7 +216,7 @@ function processIncompleteProfiles() {
                     this.then(function() {
                         var value = '',
                             key = keys[i],
-                            selector = xPath(profileSelectors[key]);
+                            selector = profileSelectors[key];
 
                         switch (key) {
                             case 'is_phone_number':
@@ -246,24 +224,32 @@ function processIncompleteProfiles() {
                                     (this.fetchText(selector).trim() == "You viewed this member's phone number.");
                                 break;
                             case 'is_photo':
-                                getPhotoLinks = value = (this.exists(selector) === true) ? true : false;
+                                this.emit('write_file', {
+                                    mat_id: profile.mat_id + 'is_photo',
+                                    page_content: this.getPageContent()
+                                });
+                                getPhotoLinks = value = (this.getElementsInfo(selector).length > 0) ? true : false;
                             case 'last_login':
+                                selector = xPath(selector);
                                 value = this.fetchText(selector);
                                 value = value.indexOf(':') == -1 ? value : value.split(':')[1].trim();
                                 break;
+                            case 'mat_id':
+                                value = this.fetchText(selector).trim();
+                                break;
                             default:
+                                selector = xPath(selector);
                                 value = this.fetchText(selector).trim();
                                 break;
                         }
                         console.log(key, value);
                         profile[key] = value;
+                        i++;
                     });
-                    i++;
                 });
 
                 this.then(function() {
                     if (viewPhoneNumber) {
-
                         var options = {
                             method: 'post',
                             headers: {
@@ -284,7 +270,7 @@ function processIncompleteProfiles() {
                             profile.primary_phone = this.fetchText('body > div > div > div.hdtxt1 > span.boldtxt.hdtxt1').trim();
                             profile.secondary_phone = this.fetchText('body > div > div > div.hdtxt1 > div');
                             profile.secondary_phone = profile.secondary_phone ? profile.secondary_phone.split(':') : null;
-                            profile.secondary_phone = profile.secondary_phone.length > 0 ? profile.secondary_phone[1].trim() : null;
+                            profile.secondary_phone = profile.secondary_phone && profile.secondary_phone.length > 0 ? profile.secondary_phone[1].trim() : '';
                         });
                     }
 
@@ -310,17 +296,22 @@ function processIncompleteProfiles() {
                             }
 
                             this.thenOpen(photoURL, options).then(function() {
+
+                                this.emit('write_file', {
+                                    mat_id: profile.mat_id + 'photos',
+                                    page_content: this.getPageContent()
+                                });
+
+                                
                                 profile.photos = {};
                                 profile.photos.thumbnails = this.getElementsAttribute('#gallery > div:nth-child(1) > div.ad-nav.fleft > div.ad-thumbs > ul a img', 'src');
                                 profile.photos.full_size = this.getElementsAttribute('#gallery > div:nth-child(1) > div.ad-nav.fleft > div.ad-thumbs > ul a', 'href');
-
-                                this.emit('cloudify_images', profile);
                             });
                         }
                     }
                 });
 
-                this.then(function() {
+                this.wait(2000, function() {
                     step_capture.call(casper, profile.mat_id);
                     casper.emit('update_profile', profile);
                 });
@@ -347,8 +338,11 @@ function processIncompleteProfiles() {
 
             click_link.call(this, {
                 stepDescription: 'Skipping the promotion page',
-                selector: 'body > div > div:nth-child(2) > div:nth-child(4) > a'
+                selector: 'body > center > div.wrapper-max > div > div.paddt10 > div.fright > div > a'
+                //'body > div > div:nth-child(2) > div:nth-child(4) > a'
             });
+
+            //this.thenOpen('http://profile.tamilmatrimony.com/login/myhome.php?frmpg=loginpg&MS=1');
 
             //---------------------- Shortlisted Profiles
 
@@ -379,8 +373,9 @@ function processIncompleteProfiles() {
     });
 
     var profileSelectors = {
-        mat_id: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[1]/div[2]/ul/li[1]',
-        //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.printvpbg.vpbgprint > div.hdtxt11.fleft.paddt10 > ul > li:nth-child(1)',
+        mat_id: '#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.printvpbg.vpbgprint > div.hdtxt11.fleft.paddt10 > ul > li:nth-child(1)',
+        //'//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[1]/div[2]/ul/li[1]',
+
         created_by: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[1]/div[2]/ul/li[3]',
         //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div.printvpbg.vpbgprint > div.hdtxt11.fleft.paddt10 > ul > li:nth-child(3)',
 
@@ -464,7 +459,7 @@ function processIncompleteProfiles() {
         sisters: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[13]/div[2]/div[2]/div[1]/div[8]/div[2]/span',
         //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.relative > div:nth-child(8) > div.fleft.colon.paddl15 > span',
 
-        tamil_matrimony_calculation: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[15]/div[2]/div[2]/div',
+        //tamil_matrimony_calculation: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div[1]/div[15]/div[2]/div[2]/div',
 
         about_family: '//*[@id="vpcontent"]/table/tbody/tr/td[1]/div/div[13]/div[2]/div[2]/div[3]/div[2]/span',
         //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(21) > div:nth-child(2) > div.fleft.hdtxt > div.paddt10 > div.txt-justify.lheight18 > span',
@@ -477,9 +472,9 @@ function processIncompleteProfiles() {
         expected_occupation: '//*[@id="moredivOccupation"]',
         //'#vpcontent > table > tbody > tr > td:nth-child(1) > div > div:nth-child(24) > div:nth-child(5) > div > div:nth-child(4) > div.fleft > div > div:nth-child(2) > div.fleft.colon.paddl20 > div',
 
-        is_phone_number: '//*[@id="titleDisp"]/div[1]',
-        //'#titleDisp > div.boldtxt.paddb10.ignblkpositive',
-        is_photo: '//*[@id="useracticonsimgs"]/div[1]/a'
-            //'#useracticonsimgs > div > a'
+        is_phone_number: '#titleDisp > div.boldtxt.paddb10.ignblkpositive',
+        //'//*[@id="titleDisp"]/div[1]',
+        is_photo: '#useracticonsimgs > div > a'
+            //'//*[@id="useracticonsimgs"]/div[1]/a'
     }
 }
