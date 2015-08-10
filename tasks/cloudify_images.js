@@ -21,6 +21,16 @@ var db_profiles = new Datastore({
         autoload: true
     });
 
+/*cloudinary.uploader.upload('http://m-imgs.matrimonycdn.com/photos/3/1/M3114165_wegah_4128.jpg',
+    function(result) {
+        console.log(result);
+    }, {
+        folder: 'M3114165',
+        use_filename: true,
+        public_id: 'M3114165' + "/" + 'M3114165_wegah_4128',
+        tag: ['tamilmatrimony', 'M3114165']
+    });*/
+
 db_profiles.find({
     profile_completed: true,
     profile_rejected: false
@@ -30,6 +40,7 @@ db_profiles.find({
 function getFullProfile(err, profiles) {
     if (err) console.log(err);
 
+    console.log('Processing ' + profiles.length + ' profiles');
     db_completed_profiles.find({
         is_photo: true
     }, function(err, completed_profiles) {
@@ -51,21 +62,40 @@ function processCompletedProfiles(profiles, completed_profiles) {
 }
 
 function cloudify(profile) {
-    /*cloudinary.api.delete_resources_by_prefix(profile.mat_id + '/', function(result) {
-        console.log(result)
-    });*/
     var photos = profile.photos ? profile.photos.full_size : null;
     if (!photos) return;
 
     photos.forEach(function(photo) {
-        cloudinary.uploader.upload(photo,
-            function(result) {
-                console.log(result);
-                updateProfileWithImageAddress(profile.mat_id, result);
-            }, {
-                folder: profile.mat_id,
-                use_filename: true
+        var photoName = photo.split('/');
+        photoName = photoName && photoName.length > 0 ? photoName[photoName.length - 1] : null;
+        photoName = photoName ? photoName.split('.') : null;
+        photoName = photoName && photoName.length > 0 ? photoName[0] : '';
+
+        var public_id = profile.mat_id + "/" + photoName,
+            existsAlready = false;
+
+        if (profile.is_clouded && profile.photos.clouded) {
+            profile.photos.clouded.some(function(cloudedPhoto) {
+                if (public_id == cloudedPhoto) {
+                    existsAlready = true;
+                    return true;
+                }
             });
+        }
+        console.log(photo + 'is in cloud already');
+        if (existsAlready) {
+            return
+        } else {
+            cloudinary.uploader.upload(photo,
+                function(result) {
+                    console.log(result);
+                    updateProfileWithImageAddress(profile.mat_id, result);
+                }, {
+                    folder: profile.mat_id,
+                    use_filename: true,
+                    public_id: public_id
+                });
+        }
     })
 }
 
@@ -79,8 +109,7 @@ function updateProfileWithImageAddress(mat_id, cloudResult) {
     }, {}, function(err, numReplaced) {
         if (err) console.log(mat_id + ' could not be inserted/ updated.')
         console.log(mat_id + ' updated');
-        console.log(arguments);
-        
+
         db_profiles.update({
             mat_id: mat_id
         }, {

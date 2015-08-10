@@ -26,7 +26,7 @@ var selectXPath = 'xPath = function(expression) {\
 };';
 
 db_profiles.find({
-    profile_completed: false,
+    //profile_completed: false,
     profile_rejected: false
 }, function(err, docs) {
     incompleteProfiles = docs;
@@ -113,7 +113,10 @@ function processIncompleteProfiles() {
                     }, {
                         $set: profile
                     }, {}, function(err, numReplaced) {
-                        if (err) console.log(profile.mat_id + ' could not be inserted/ updated.')
+                        if (err) {
+                            console.log(profile.mat_id + ' could not be inserted/ updated.');
+                            console.log(err);
+                        }
                         console.log(profile.mat_id + ' updated');
                         markProfileComplete();
                     });

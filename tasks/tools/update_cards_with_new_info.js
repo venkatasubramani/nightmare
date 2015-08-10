@@ -1,9 +1,5 @@
-// <public key> - 1198f3b9e7a8856f23bcff3224b3c1ff
-// get the key by going to https://trello.com/1/connect?key=<public key>&name=MyApp&response_type=token&expiration=never&scope=read,write
-
-var trelloPublicKey = "eeb0e57e74ba4de835c90072f1156a93"; //"1198f3b9e7a8856f23bcff3224b3c1ff",
+var trelloPublicKey = "eeb0e57e74ba4de835c90072f1156a93";
 trelloToken = "1b441c055d7603302bd4ac578c49b8f0dfbff314047187a8eb54e43f0e1f6df4"
-    //"858df94d832ec6bdadd410a14e280bf3e67d7d3a906b956d84a2edd7ee5ea973";
 
 var Trello = require("node-trello");
 var Q = require('q');
@@ -11,9 +7,8 @@ var t = new Trello(trelloPublicKey, trelloToken);
 var Datastore = require('nedb');
 
 var ORGANIZATION = 'projectnighmare',
-    BOARD = 'goldrush_regression',
-    NEWPROFILESLIST = 'New Profiles',
-    MEMBERS = {};
+    BOARD = 'testbed',
+    NEWPROFILESLIST = 'New Profiles';
 
 var db_profiles = new Datastore({
         filename: 'db/profiles',
@@ -28,30 +23,27 @@ var db_profiles = new Datastore({
         autoload: true
     });
 
-db_profiles.find({
-    profile_rejected: false,
-    profile_completed: true
-        //profile_published: false
-}, function(err, completedProfiles) {
-    if (completedProfiles && completedProfiles.length > 0) {
-        console.log('publishing ' + completedProfiles.length + ' profiles');
-        publish_trello(completedProfiles);
+db_trello_profiles.find({}, function(err, trelloProfiles) {
+    if (trelloProfiles && trelloProfiles.length > 0) {
+        console.log('republishing ' + trelloProfiles.length + ' profiles');
+        republish_trello(trelloProfiles);
     } else console.log('Nothing new to process');
 });
 
-function publish_trello(completedProfiles) {
+function republish_trello(trelloProfiles) {
     getBoardId(ORGANIZATION, BOARD)
         .then(function(boardId) {
-            getMembers(boardId)
-                .then(function(members) {
-                    members.forEach(function(member) {
-                        MEMBERS[member.username] = member.id;
-                    });
-                });
             return getList(boardId, NEWPROFILESLIST)
         })
         .then(function(listId) {
-            return createCards(listId, completedProfiles);
+            trelloProfiles.forEach(function(trello_profile) {
+                db_completed_profiles.find({
+                    mat_id: trello_profile.mat_id
+                }, function(err, full_profile) {
+                    return updateCard(trello_profile.card_id, full_profile);
+                });
+            });
+            //return createCards(listId, completedProfiles);
         })
         .then(function() {
             console.log('All profiles are published in Trello.')
@@ -75,19 +67,6 @@ function getBoardId(organization, boardName) {
                 return;
             }
         });
-    });
-
-    return deferred.promise;
-}
-
-function getMembers(boardId) {
-    var deferred = Q.defer(),
-        url = "/1/boards/" + boardId + '/members';
-
-    t.get(url, function(err, members) {
-        if (err) deferred.reject(err);
-
-        deferred.resolve(members);
     });
 
     return deferred.promise;
@@ -126,32 +105,13 @@ function createCards(newProfilesListId, profiles) {
 
             return getCardId(newProfilesListId, profile)
                 .then(function(cardid) {
-
                     return getFullProfile(profile)
-                        .then(removeAllAttachments(cardid))
                         .then(function(fullProfile) {
                             return updateCard(cardid, fullProfile);
                         });
                 });
         });
     }
-
-    return deferred.promise;
-}
-
-function removeAllAttachments(cardid) {
-    var deferred = Q.defer(),
-        url = "/1/cards/" + cardid + '/attachments';
-
-    t.get(url, function(err, attachments) {
-        if (err) deferred.reject(err);
-
-        attachments.forEach(function(attachment) {
-            t.del(url + '/' + attachment.id, function(err, records) {
-                deferred.resolve(Q(undefined));
-            })
-        });
-    });
 
     return deferred.promise;
 }
@@ -168,7 +128,6 @@ function updateProfile(data) {
             profile_published: true
         }
     }, {}, function(err, numReplaced) {
-        if (err) deferred.reject(err);
         console.log('Profile ' + profile.mat_id + ' published');
         deferred.resolve(Q(undefined));
     });
@@ -241,12 +200,15 @@ function createCard(listId, profile) {
             fieldName: 'mat_id',
             unique: true
         }, function(err) {
-            db_trello_profiles.insert({
-                mat_id: profile.mat_id,
-                card_id: card.id
-            }, function(err, numReplaced) {
+            db_trello_profiles.update({
+                mat_id: profile.mat_id
+            }, {
+                $set: {
+                    card_id: card.id
+                }
+            }, {}, function(err, numReplaced) {
                 if (err) deferred.reject(err);
-                console.log('Card (' + card.id + ') for ' + profile.mat_id + ' created');
+                console.log('Card (' + card.id + ') for ' + profile.mat_id + ' updated');
                 deferred.resolve(card);
             });
         });
@@ -256,8 +218,7 @@ function createCard(listId, profile) {
 
     return _createCard()
         .then(_saveCard)
-        .catch(function(err) {
-            console.log(err);
+        .catch(function() {
             console.log('Fail: Card could not be created for ' + profile.mat_id)
         });
 }
@@ -268,8 +229,7 @@ function updateCard(cardid, profile) {
             updateName(cardid, profile),
             updateDescription(cardid, profile),
             addLabels(cardid, profile),
-            updatePhotos(cardid, profile),
-            attachMembers(cardid, profile)
+            updatePhotos(cardid, profile)
         ])
         .then(function(card) {
             return updateProfile({
@@ -277,8 +237,7 @@ function updateCard(cardid, profile) {
                 profile: profile
             })
         })
-        .catch(function(err) {
-            console.log(err);
+        .catch(function() {
             console.log('Fail: Card could not be updated for ' + profile.mat_id)
         });
 }
@@ -291,22 +250,6 @@ function trello_card_updateLabel(cardid, label) {
     var options = label
 
     t.post(url, options, function(err, data) {
-        if (err) deferred.reject(err);
-        deferred.resolve(data);
-    });
-
-    return deferred.promise;
-}
-
-function trello_card_updateMember(cardid, memberid) {
-    var deferred = Q.defer(),
-        url = "/1/cards/" + cardid + '/idMembers';
-
-    var options = {
-        value: memberid
-    };
-
-    t.put(url, options, function(err, data) {
         if (err) deferred.reject(err);
         deferred.resolve(data);
     });
@@ -364,28 +307,6 @@ function trello_card_updateAttachment(cardid, photo) {
         deferred.resolve(data);
     });
 
-    /*t.get(url, function(err, attachments) {
-        if (err) deferred.reject(err);
-
-        var available = false;
-        var photoName = photo.split('/');
-        photoName = photoName[photoName.length - 1];
-
-        attachments.some(function(pName) {
-            return available = photoName == pName.name;
-        });
-
-        if (!available) {
-            t.post(url, options, function(err, data) {
-                if (err) deferred.reject(err);
-                deferred.resolve(data);
-            });
-        } else {
-            console.log('Photo ' + photo + ' already attched.');
-            deferred.resolve(Q(undefined));
-        }
-    });*/
-
     return deferred.promise;
 }
 
@@ -403,32 +324,15 @@ function updatePhotos(cardid, profile) {
             photo = 'http://res.cloudinary.com/dysqj6szg/image/upload/v1438580190/' + photo + '.jpg';
             index++;
             return trello_card_updateAttachment(cardid, photo);
-        }).catch(function(err) {
-            console.log(err);
         });
     }
-}
-
-function attachMembers(cardid, profile) {
-    var memberid = '';
-
-    if (profile.created_by == 'Profile Created for Self') {
-        memberid = MEMBERS.venkatvellaichamy;
-    } else {
-        memberid = MEMBERS.kalyanivellaichamy;
-    }
-
-    return trello_card_updateMember(cardid, memberid)
-        .catch(function(err) {
-            console.log(err +'Member already assigned to ' + profile.mat_id)
-        });;
 }
 
 function addLabels(cardid, profile) {
     return Q.all([countryLabel(cardid, profile), educationLabel(cardid, profile)])
         .catch(function() {
             console.log('Labels already added to ' + profile.mat_id)
-        });
+        });;
 }
 
 function countryLabel(cardid, profile) {
@@ -474,15 +378,15 @@ function updateDescription(cardid, profile) {
     description += '\n' + '*Education:* ' + profile.education + ' (' + profile.education_detail + ')'
     description += '\n' + '*Occupation:* ' + profile.occupation + ' (' + profile.occupation_detail + ')'
     description += '\n' + '*Employed in:* ' + profile.employed_in + ' (' + profile.annual_income + ')'
-    description += '\n\n\n' + '**Family**'
+    description += '\n\n' + '**Family**'
     description += '\n' + '*Family Status:* ' + profile.family_status
-    description += '\n' + '*Father:* ' + profile.father_status + ' . ' + '*Mother:* ' + profile.mom_status;
-    description += '\n' + '*Brothers:* ' + profile.brothers + ' . ' + '*Sisters:* ' + profile.sisters;
-    description += '\n\n\n' + '**About Her**';
+    description += '\n' + '*Father:* ' + profile.father_status + '\n' + '*Mother:* ' + profile.mom_status;
+    description += '\n' + '*Brothers:* ' + profile.brothers + '\n' + '*Sisters:* ' + profile.sisters;
+    description += '\n\n' + '**About Her**';
     description += '\n' + profile.description;
-    description += '\n\n\n' + '**About Family**';
+    description += '\n\n' + '**About Family**';
     description += '\n' + profile.about_family;
-    description += '\n\n\n' + '**Expectation**';
+    description += '\n\n' + '**Expectation**';
     description += '\n' + profile.looking_for;
     description += '\n' + '*Caste:* ' + profile.expected_caste;
     description += '\n' + '*Education:* ' + profile.expected_education;
@@ -495,8 +399,7 @@ function updateDescription(cardid, profile) {
         });
     }
 
-    description += '\n\n\n' + profile.created_by
-    description += '\n' + '[View this profile in tamilmatrimony >>](http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=' + profile.mat_id + ')';
+    description += '\n\n' + '[View this profile in tamilmatrimony >>](http://profile.tamilmatrimony.com/profiledetail/viewprofile.php?id=' + profile.mat_id + ')';
 
     return trello_card_updateDesc(cardid, description);
 }
