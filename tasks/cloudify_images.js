@@ -56,12 +56,12 @@ function processCompletedProfiles(profiles, completed_profiles) {
             var fullProfile = _.filter(completed_profiles, _.matches({
                 'mat_id': profile.mat_id
             }));
-            if (fullProfile.length > 0) cloudify(fullProfile[0]);
+            if (fullProfile.length > 0) cloudify(profile.is_clouded, fullProfile[0]);
         });
     }
 }
 
-function cloudify(profile) {
+function cloudify(is_clouded, profile) {
     var photos = profile.photos ? profile.photos.full_size : null;
     if (!photos) return;
 
@@ -74,7 +74,7 @@ function cloudify(profile) {
         var public_id = profile.mat_id + "/" + photoName,
             existsAlready = false;
 
-        if (profile.is_clouded && profile.photos.clouded) {
+        if (is_clouded && profile.photos.clouded) {
             profile.photos.clouded.some(function(cloudedPhoto) {
                 if (public_id == cloudedPhoto) {
                     existsAlready = true;
@@ -82,8 +82,9 @@ function cloudify(profile) {
                 }
             });
         }
-        console.log(photo + 'is in cloud already');
+        
         if (existsAlready) {
+            console.log(photo + 'is in cloud already');
             return
         } else {
             cloudinary.uploader.upload(photo,
@@ -91,9 +92,9 @@ function cloudify(profile) {
                     console.log(result);
                     updateProfileWithImageAddress(profile.mat_id, result);
                 }, {
-                    folder: profile.mat_id,
                     use_filename: true,
-                    public_id: public_id
+                    public_id: public_id,
+                    tag: ['tamilmatrimony'].push(profile.mat_id)
                 });
         }
     })
@@ -117,7 +118,7 @@ function updateProfileWithImageAddress(mat_id, cloudResult) {
                 'is_clouded': true
             }
         }, {}, function(err, numReplaced) {
-            console.log(arguments);
+            if(err) console.log(err);
         });
     });
 }

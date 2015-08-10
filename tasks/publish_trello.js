@@ -412,10 +412,14 @@ function updatePhotos(cardid, profile) {
 function attachMembers(cardid, profile) {
     var memberid = '';
 
-    if (profile.created_by == 'Profile Created for Self') {
-        memberid = MEMBERS.venkatvellaichamy;
-    } else {
-        memberid = MEMBERS.kalyanivellaichamy;
+    switch(profile.created_by) {
+        case 'Profile Created for Friend':
+        case 'Profile Created for Self':
+        memberid = MEMBERS.venkatvellaichamy;    
+            break;
+        default:
+            memberid = MEMBERS.kalyanivellaichamy;
+            break;
     }
 
     return trello_card_updateMember(cardid, memberid)
