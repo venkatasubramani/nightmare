@@ -12,7 +12,12 @@ var Datastore = require('nedb');
 
 var ORGANIZATION = 'projectnighmare',
     BOARD = 'goldrush',
+<<<<<<< HEAD
     NEWPROFILESLIST = 'New Profiles';
+=======
+    NEWPROFILESLIST = 'New Profiles',
+    MEMBERS = {};
+>>>>>>> 51b31d0... release 2
 
 var db_profiles = new Datastore({
         filename: 'db/profiles',
