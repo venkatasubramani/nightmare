@@ -14,8 +14,11 @@ var ORGANIZATION = 'projectnighmare',
     BOARD = 'goldrush',
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     NEWPROFILESLIST = 'New Profiles';
 =======
+=======
+>>>>>>> 51b31d0... release 2
 =======
 >>>>>>> 51b31d0... release 2
     NEWPROFILESLIST = 'New Profiles',
