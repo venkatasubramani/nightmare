@@ -8,7 +8,7 @@ var t = new Trello(trelloPublicKey, trelloToken);
 var Datastore = require('nedb');
 
 var ORGANIZATION = 'projectnighmare',
-    BOARD = 'goldrush_regression';
+    BOARD = 'goldrush';
 
 var db_trello_profiles = new Datastore({
     filename: 'db/trello_profiles',
