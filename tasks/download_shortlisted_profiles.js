@@ -5,7 +5,7 @@ var Spooky = require('spooky'),
             transport: 'http'
         },
         casper: {
-            logLevel: 'error',
+            logLevel: 'debug',
             verbose: true,
             options: {
                 clientScripts: ['https://code.jquery.com/jquery-2.1.4.js']
@@ -31,7 +31,6 @@ var spooky = new Spooky(spookyConfig, function(err) {
         e.details = err;
         throw e;
     }
-
     spooky.start('http://www.tamilmatrimony.com/');
     spooky.emit('start_tamil_matrimony');
     spooky.run();
@@ -58,6 +57,7 @@ spooky.on('read_multiple_profiles', function(profiles) {
 // ---------- Main Event
 
 spooky.on('start_tamil_matrimony', function() {
+console.log('1');
     this.then([{
         URL: URL,
         DIR_VIEW: DIR_VIEW,

@@ -2,7 +2,7 @@
 // get the key by going to https://trello.com/1/connect?key=<public key>&name=MyApp&response_type=token&expiration=never&scope=read,write
 
 var trelloPublicKey = "eeb0e57e74ba4de835c90072f1156a93"; //"1198f3b9e7a8856f23bcff3224b3c1ff",
-trelloToken = "1b441c055d7603302bd4ac578c49b8f0dfbff314047187a8eb54e43f0e1f6df4"
+var trelloToken = "1b441c055d7603302bd4ac578c49b8f0dfbff314047187a8eb54e43f0e1f6df4";
     //"858df94d832ec6bdadd410a14e280bf3e67d7d3a906b956d84a2edd7ee5ea973";
 
 var Trello = require("node-trello");
@@ -30,8 +30,8 @@ var db_profiles = new Datastore({
 
 db_profiles.find({
     profile_rejected: false,
-    profile_completed: true
-        //profile_published: false
+    profile_completed: true,
+    profile_published: false
 }, function(err, completedProfiles) {
     if (completedProfiles && completedProfiles.length > 0) {
         console.log('publishing ' + completedProfiles.length + ' profiles');
@@ -48,7 +48,7 @@ function publish_trello(completedProfiles) {
                         MEMBERS[member.username] = member.id;
                     });
                 });
-            return getList(boardId, NEWPROFILESLIST)
+            return getList(boardId, NEWPROFILESLIST);
         })
         .then(function(listId) {
             return createCards(listId, completedProfiles);
@@ -415,7 +415,7 @@ function attachMembers(cardid, profile) {
     switch(profile.created_by) {
         case 'Profile Created for Friend':
         case 'Profile Created for Self':
-        memberid = MEMBERS.venkatvellaichamy;    
+        memberid = MEMBERS.venkatvellaichamy;
             break;
         default:
             memberid = MEMBERS.kalyanivellaichamy;

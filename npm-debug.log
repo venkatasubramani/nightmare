@@ -1,0 +1,78 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/bin/node', '/usr/bin/npm', 'install', 'spookyjs' ]
+2 info using npm@1.4.28
+3 info using node@v0.10.36
+4 warn package.json nightmare@1.0.0 No description
+5 verbose readDependencies using package.json deps
+6 verbose cache add [ 'spookyjs', null ]
+7 verbose cache add name=undefined spec="spookyjs" args=["spookyjs",null]
+8 verbose parsed url { protocol: null,
+8 verbose parsed url   slashes: null,
+8 verbose parsed url   auth: null,
+8 verbose parsed url   host: null,
+8 verbose parsed url   port: null,
+8 verbose parsed url   hostname: null,
+8 verbose parsed url   hash: null,
+8 verbose parsed url   search: null,
+8 verbose parsed url   query: null,
+8 verbose parsed url   pathname: 'spookyjs',
+8 verbose parsed url   path: 'spookyjs',
+8 verbose parsed url   href: 'spookyjs' }
+9 silly lockFile 052aaf17-spookyjs spookyjs
+10 verbose lock spookyjs /root/.npm/052aaf17-spookyjs.lock
+11 silly lockFile 052aaf17-spookyjs spookyjs
+12 silly lockFile 052aaf17-spookyjs spookyjs
+13 verbose addNamed [ 'spookyjs', '' ]
+14 verbose addNamed [ null, '*' ]
+15 silly lockFile badeed9b-spookyjs spookyjs@
+16 verbose lock spookyjs@ /root/.npm/badeed9b-spookyjs.lock
+17 silly addNameRange { name: 'spookyjs', range: '*', hasData: false }
+18 verbose request where is /spookyjs
+19 verbose request registry http://localhost:4873/
+20 verbose request id d97ea187f8530f38
+21 verbose url raw /spookyjs
+22 verbose url resolving [ 'http://localhost:4873/', './spookyjs' ]
+23 verbose url resolved http://localhost:4873/spookyjs
+24 verbose request where is http://localhost:4873/spookyjs
+25 info trying registry request attempt 1 at 07:29:40
+26 http GET http://localhost:4873/spookyjs
+27 http 404 http://localhost:4873/spookyjs
+28 verbose headers { 'x-powered-by': 'Sinopia/1.4.0',
+28 verbose headers   'content-type': 'application/json; charset=utf-8',
+28 verbose headers   'content-length': '43',
+28 verbose headers   etag: 'W/"2b-d418f262"',
+28 verbose headers   vary: 'Accept-Encoding',
+28 verbose headers   'x-status-cat': 'http://flic.kr/p/aV6juR',
+28 verbose headers   date: 'Sat, 22 Aug 2015 14:29:40 GMT',
+28 verbose headers   connection: 'keep-alive' }
+29 silly registry.get cb [ 404,
+29 silly registry.get   { 'x-powered-by': 'Sinopia/1.4.0',
+29 silly registry.get     'content-type': 'application/json; charset=utf-8',
+29 silly registry.get     'content-length': '43',
+29 silly registry.get     etag: 'W/"2b-d418f262"',
+29 silly registry.get     vary: 'Accept-Encoding',
+29 silly registry.get     'x-status-cat': 'http://flic.kr/p/aV6juR',
+29 silly registry.get     date: 'Sat, 22 Aug 2015 14:29:40 GMT',
+29 silly registry.get     connection: 'keep-alive' } ]
+30 silly lockFile badeed9b-spookyjs spookyjs@
+31 silly lockFile badeed9b-spookyjs spookyjs@
+32 error Error: no such package available : spookyjs
+32 error     at RegClient.<anonymous> (/usr/lib/node_modules/npm/node_modules/npm-registry-client/lib/request.js:308:14)
+32 error     at Request._callback (/usr/lib/node_modules/npm/node_modules/npm-registry-client/lib/request.js:246:65)
+32 error     at Request.self.callback (/usr/lib/node_modules/npm/node_modules/request/request.js:236:22)
+32 error     at Request.emit (events.js:98:17)
+32 error     at Request.<anonymous> (/usr/lib/node_modules/npm/node_modules/request/request.js:1142:14)
+32 error     at Request.emit (events.js:117:20)
+32 error     at IncomingMessage.<anonymous> (/usr/lib/node_modules/npm/node_modules/request/request.js:1096:12)
+32 error     at IncomingMessage.emit (events.js:117:20)
+32 error     at _stream_readable.js:944:16
+32 error     at process._tickCallback (node.js:442:13)
+33 error If you need help, you may report this *entire* log,
+33 error including the npm and node versions, at:
+33 error     <http://github.com/npm/npm/issues>
+34 error System Linux 2.6.32-504.16.2.el6.rvbd.37.x86_64
+35 error command "/usr/bin/node" "/usr/bin/npm" "install" "spookyjs"
+36 error cwd /root/nightmare
+37 error node -v v0.10.36
+38 error npm -v 1.4.28
+39 verbose exit [ 1, true ]

@@ -26,7 +26,7 @@ var selectXPath = 'xPath = function(expression) {\
 };';
 
 db_profiles.find({
-    //profile_completed: false,
+    profile_completed: false,
     profile_rejected: false
 }, function(err, docs) {
     incompleteProfiles = docs;
